@@ -6,10 +6,11 @@ import { createReasoner } from "./agents/reasoner";
 import { AuditStore } from "./audit/store";
 import { PayGuardPipeline } from "./pipeline";
 
-let singleton: PayGuardPipeline | null = null;
+// Kept on globalThis: Next.js may load this module in separate route/page bundles,
+// and the mock PayPal state must be shared by all of them in one process.
+const g = globalThis as typeof globalThis & { __payguardPipeline?: Promise<PayGuardPipeline> | null };
 
-export async function getPipeline(): Promise<PayGuardPipeline> {
-  if (singleton) return singleton;
+async function build(): Promise<PayGuardPipeline> {
   const cfg = loadConfig();
   const policy = new SpendPolicy({
     perTxCents: cfg.perTxCents,
@@ -19,19 +20,25 @@ export async function getPipeline(): Promise<PayGuardPipeline> {
     requireReason: true,
   });
   const adapter = createPayPalAdapter(cfg);
-  const reasoner = createReasoner({
-    llmBaseUrl: cfg.llmBaseUrl,
-    llmApiKey: cfg.llmApiKey,
-    llmModel: cfg.llmModel,
-  });
+  const reasoner = createReasoner(cfg);
   const audit = new AuditStore(
-    path.join(process.cwd(), "data", "audit-store.json"),
+    process.env.PAYGUARD_AUDIT_PATH || path.join(process.cwd(), "data", `audit-store.${cfg.mode}.json`),
   );
   await audit.load();
-  singleton = new PayGuardPipeline(policy, adapter, reasoner, audit);
-  return singleton;
+  if (cfg.mode === "mock") {
+    // mock orders live in memory — drop stale holds from a previous process
+    await audit.expireDanglingOrders("mock adapter restarted; order no longer exists");
+  }
+  const pipe = new PayGuardPipeline(policy, adapter, reasoner, audit, { appBaseUrl: cfg.appBaseUrl });
+  pipe.restoreSpendFromAudit();
+  return pipe;
+}
+
+export function getPipeline(): Promise<PayGuardPipeline> {
+  if (!g.__payguardPipeline) g.__payguardPipeline = build();
+  return g.__payguardPipeline;
 }
 
 export function resetPipelineForTests(): void {
-  singleton = null;
+  g.__payguardPipeline = null;
 }

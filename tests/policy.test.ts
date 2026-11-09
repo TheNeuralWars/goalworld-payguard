@@ -80,3 +80,30 @@ describe("SpendPolicy", () => {
     expect(p.remainingDailyCents()).toBe(7000);
   });
 });
+
+describe("SpendPolicy reservations (Orders awaiting payer approval)", () => {
+  it("holds count against daily cap, release frees, commit converts to spend", () => {
+    const p = policy();
+    p.reserve("o1", 6000);
+    expect(p.getReservedCents()).toBe(6000);
+    expect(p.remainingDailyCents()).toBe(4000);
+    const blocked = p.check({ payee: "tools@goalworld.fun", amountCents: 4500, currency: "USD", reason: "second order today" });
+    expect(blocked.ok).toBe(false);
+    if (!blocked.ok) expect(blocked.code).toBe("DAILY_CAP");
+    // re-checking the held order itself must not double count its own hold
+    expect(p.check({ payee: "tools@goalworld.fun", amountCents: 5000, currency: "USD", reason: "re-check own hold", reservationId: "o1" }).ok).toBe(true);
+    p.release("o1");
+    expect(p.getReservedCents()).toBe(0);
+    p.reserve("o2", 3000);
+    p.commit("o2", 3000);
+    expect(p.getReservedCents()).toBe(0);
+    expect(p.getSpentTodayCents()).toBe(3000);
+  });
+
+  it("rejects non-canonical payees outright", () => {
+    const p = policy();
+    const r = p.check({ payee: "tools@goalworld.fun.", amountCents: 100, currency: "USD", reason: "trailing dot" });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("PAYEE_NOT_ALLOWED");
+  });
+});

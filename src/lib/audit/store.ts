@@ -10,6 +10,9 @@ export interface AuditEvent {
     | "guard"
     | "human_approve"
     | "human_reject"
+    | "order_created"
+    | "payer_approved"
+    | "payer_cancel"
     | "execute"
     | "fail";
   proposalId: string;
@@ -68,6 +71,19 @@ export class AuditStore {
   async saveProposal(p: PaymentProposal) {
     this.proposals.set(p.id, p);
     await this.flush();
+  }
+
+  /** Mark orders waiting on an in-memory (mock) PayPal that no longer exists as failed. */
+  async expireDanglingOrders(why: string): Promise<number> {
+    let n = 0;
+    for (const p of this.proposals.values()) {
+      if (p.status === "awaiting_payer_approval") {
+        this.proposals.set(p.id, { ...p, status: "failed", error: why });
+        n++;
+      }
+    }
+    if (n) await this.flush();
+    return n;
   }
 
   getProposal(id: string): PaymentProposal | undefined {

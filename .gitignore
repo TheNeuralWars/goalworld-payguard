@@ -11,3 +11,4 @@ data/*.json
 artifacts/evidence/*.png
 artifacts/evidence/*.mp4
 data/audit-store.json
+tsconfig.tsbuildinfo

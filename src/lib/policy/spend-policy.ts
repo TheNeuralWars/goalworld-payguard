@@ -1,3 +1,5 @@
+import { canonicalPayee, isAllowlisted, isStrictEmail } from "../payee";
+
 /**
  * Human spend policy for agentic payments (fiat cents).
  * Inspired by GoalChain AgentPay spend-cap ideas — fiat edition, not a fork.
@@ -38,6 +40,8 @@ export class SpendPolicy {
   readonly currency: string;
   readonly requireReason: boolean;
   private spentCents = 0;
+  /** Held for Orders awaiting PayPal payer approval — counts against the daily cap. */
+  private reserved = new Map<string, number>();
   private day: string;
   private readonly now: () => Date;
 
@@ -60,6 +64,7 @@ export class SpendPolicy {
     if (t !== this.day) {
       this.day = t;
       this.spentCents = 0;
+      this.reserved.clear();
     }
   }
 
@@ -68,9 +73,30 @@ export class SpendPolicy {
     return this.spentCents;
   }
 
+  getReservedCents(): number {
+    this.rollDay();
+    let sum = 0;
+    for (const v of this.reserved.values()) sum += v;
+    return sum;
+  }
+
   remainingDailyCents(): number {
     this.rollDay();
-    return Math.max(0, this.dailyCents - this.spentCents);
+    return Math.max(0, this.dailyCents - this.spentCents - this.getReservedCents());
+  }
+
+  snapshot() {
+    return {
+      perTxCents: this.perTxCents,
+      dailyCents: this.dailyCents,
+      spentTodayCents: this.getSpentTodayCents(),
+      reservedCents: this.getReservedCents(),
+      remainingDailyCents: this.remainingDailyCents(),
+      currency: this.currency,
+      allowPayees: [...this.allowPayees],
+      requireReason: this.requireReason,
+      day: this.day,
+    };
   }
 
   check(input: {
@@ -78,13 +104,22 @@ export class SpendPolicy {
     amountCents: number;
     currency: string;
     reason?: string;
+    /** reservation key to exclude from the held total (re-check of an existing hold) */
+    reservationId?: string;
   }): PolicyCheck {
     this.rollDay();
-    const payee = input.payee.trim().toLowerCase();
+    const payee = canonicalPayee(input.payee || "");
     if (!payee) {
       return { ok: false, code: "PAYEE_NOT_ALLOWED", reason: "payee required" };
     }
-    if (!this.allowPayees.has(payee)) {
+    if (!isStrictEmail(payee)) {
+      return {
+        ok: false,
+        code: "PAYEE_NOT_ALLOWED",
+        reason: `payee ${JSON.stringify(payee)} is not a canonical ASCII email — no fuzzy matching`,
+      };
+    }
+    if (!isAllowlisted(payee, this.allowPayees)) {
       return {
         ok: false,
         code: "PAYEE_NOT_ALLOWED",
@@ -119,14 +154,42 @@ export class SpendPolicy {
         reason: `exceeds per-tx cap ${this.perTxCents}¢ (got ${input.amountCents}¢)`,
       };
     }
-    if (this.spentCents + input.amountCents > this.dailyCents) {
+    const held =
+      this.getReservedCents() -
+      (input.reservationId ? this.reserved.get(input.reservationId) || 0 : 0);
+    if (this.spentCents + held + input.amountCents > this.dailyCents) {
       return {
         ok: false,
         code: "DAILY_CAP",
-        reason: `exceeds daily cap ${this.dailyCents}¢ (spent ${this.spentCents}¢ + ${input.amountCents}¢)`,
+        reason: `exceeds daily cap ${this.dailyCents}¢ (spent ${this.spentCents}¢ + held ${held}¢ + ${input.amountCents}¢)`,
       };
     }
     return { ok: true };
+  }
+
+  /** Hold budget while an Order waits for payer approval. Idempotent per id. */
+  reserve(id: string, amountCents: number): void {
+    this.rollDay();
+    if (!Number.isInteger(amountCents) || amountCents <= 0) throw new Error("reserve: bad amount");
+    this.reserved.set(id, amountCents);
+  }
+
+  release(id: string): void {
+    this.rollDay();
+    this.reserved.delete(id);
+  }
+
+  /** Convert a hold into real spend (after PayPal capture COMPLETED). */
+  commit(id: string, amountCents: number): void {
+    this.release(id);
+    this.record(amountCents);
+  }
+
+  /** Rebuild today's counters from the persisted audit store after a restart. */
+  restore(state: { spentCents: number; reservations: Array<[string, number]> }): void {
+    this.rollDay();
+    this.spentCents = state.spentCents;
+    this.reserved = new Map(state.reservations);
   }
 
   record(amountCents: number): void {

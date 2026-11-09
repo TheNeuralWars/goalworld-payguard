@@ -1,6 +1,6 @@
 {
   "name": "goalworld-payguard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "GoalWorld PayGuard — AI agents propose/guard/execute PayPal sandbox payments under human spend policy",
   "license": "MIT",
@@ -11,7 +11,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "tsx scripts/demo.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo:llm": "scripts/with-omniroute.sh tsx scripts/demo.ts",
+    "demo:offline": "PAYGUARD_LLM_DISABLED=1 tsx scripts/demo.ts",
+    "start:llm": "scripts/with-omniroute.sh next start -H 127.0.0.1 -p 3047",
+    "smoke:sandbox": "tsx scripts/sandbox-smoke.ts",
+    "screenshot": "scripts/screenshot.sh"
   },
   "dependencies": {
     "next": "^15.1.0",

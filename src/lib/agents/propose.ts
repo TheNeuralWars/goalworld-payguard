@@ -33,6 +33,7 @@ export async function proposePayment(
       summary: "pending guard",
       requiresHuman: true,
     },
-    reasoner: reasoner.kind,
+    reasoner: drafted.trace.kind,
+    proposeTrace: drafted.trace,
   };
 }

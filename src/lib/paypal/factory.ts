@@ -4,7 +4,7 @@ import { MockPayPalAdapter } from "./mock-adapter";
 import { SandboxPayPalAdapter } from "./sandbox-adapter";
 
 export function createPayPalAdapter(cfg: PayGuardConfig): PayPalAdapter {
-  if (cfg.mode === "mock") return new MockPayPalAdapter();
+  if (cfg.mode === "mock") return new MockPayPalAdapter({ approvalBaseUrl: cfg.appBaseUrl });
   return new SandboxPayPalAdapter(
     cfg.paypalClientId!,
     cfg.paypalClientSecret!,

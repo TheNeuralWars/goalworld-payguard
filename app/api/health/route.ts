@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const cfg = loadConfig();
+    const llm = !cfg.llmDisabled && !!cfg.llmApiKey && !!cfg.llmBaseUrl;
     return NextResponse.json({
       ok: true,
       service: "goalworld-payguard",
@@ -14,6 +15,7 @@ export async function GET() {
       perTxCents: cfg.perTxCents,
       dailyCents: cfg.dailyCents,
       allowPayees: cfg.allowPayees,
+      reasoner: llm ? { kind: "llm", model: cfg.llmModel, gateway: "omniroute" } : { kind: "heuristic" },
       liveEndpointsBlocked: true,
     });
   } catch (err) {

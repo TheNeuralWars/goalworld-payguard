@@ -1,0 +1,40 @@
+{
+  "at": "2026-11-09T18:33:55.180Z",
+  "mode": "mock",
+  "honest_note": "MOCK adapter — no PayPal network calls; same state machine as Orders v2/Payouts",
+  "orderId": "MOCK-ORDER-21200FDD",
+  "payoutBatchId": "MOCK-BATCH-C68C94BC",
+  "steps": [
+    {
+      "step": "1 adapter",
+      "ok": true,
+      "detail": "mock adapter ready"
+    },
+    {
+      "step": "2 create order",
+      "ok": true,
+      "detail": "MOCK-ORDER-21200FDD status=PAYER_ACTION_REQUIRED approve=http://127.0.0.1:3047/mock-paypal/checkout?token=MOCK-ORDER-21200FDD"
+    },
+    {
+      "step": "3 capture before approval",
+      "ok": true,
+      "detail": "refused as expected: 422 ORDER_NOT_APPROVED"
+    },
+    {
+      "step": "4 payer approval",
+      "ok": true,
+      "detail": "MOCK payer approved → APPROVED"
+    },
+    {
+      "step": "5 capture",
+      "ok": true,
+      "detail": "MOCK-ORDER-21200FDD status=COMPLETED capture=MOCK-CAP-1C6079CD"
+    },
+    {
+      "step": "6 payout",
+      "ok": true,
+      "detail": "MOCK-BATCH-C68C94BC create=PENDING → get=SUCCESS"
+    }
+  ],
+  "failed": 0
+}
