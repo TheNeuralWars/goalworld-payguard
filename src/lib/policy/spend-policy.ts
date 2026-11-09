@@ -80,6 +80,11 @@ export class SpendPolicy {
     return sum;
   }
 
+  reservationOf(id: string): number {
+    this.rollDay();
+    return this.reserved.get(id) ?? 0;
+  }
+
   remainingDailyCents(): number {
     this.rollDay();
     return Math.max(0, this.dailyCents - this.spentCents - this.getReservedCents());

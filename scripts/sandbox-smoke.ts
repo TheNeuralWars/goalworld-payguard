@@ -71,8 +71,11 @@ async function main() {
     console.log(`\n  Open as the sandbox BUYER and click Pay:  ${order.approveUrl}\n  polling for ${waitSec}s…`);
     const until = Date.now() + waitSec * 1000;
     while (Date.now() < until) {
-      const o = await adapter.getOrder(order.id);
-      if (o.status === "APPROVED") {
+      const o = await adapter.getOrder(order.id).catch((e) => {
+        console.log(`  poll error (retrying): ${e instanceof Error ? e.message.slice(0, 80) : e}`);
+        return null;
+      });
+      if (o?.status === "APPROVED") {
         approved = true;
         break;
       }

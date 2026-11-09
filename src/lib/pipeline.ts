@@ -232,10 +232,17 @@ export class PayGuardPipeline {
       return this.fail(p, `capture blocked by policy: ${check.reason}`, "guard_rejected");
     }
 
+    const held = this.policy.reservationOf(p.id);
     await this.audit.append({
       type: "payer_approved",
       proposalId: p.id,
-      detail: `PayPal payer approved order ${p.orderId} — capturing`,
+      detail: `PayPal payer approved order ${p.orderId}; verified ${formatUsd(order.amountCents)} ${order.currency} → ${order.payeeEmail || p.payeeEmail} = reservation ${formatUsd(held)} — capturing`,
+      meta: {
+        paypal: { status: order.status, amountCents: order.amountCents, currency: order.currency, payee: order.payeeEmail },
+        proposal: { amountCents: p.amountCents, currency: p.currency, payee: p.payeeEmail },
+        reservedCents: held,
+        match: held === p.amountCents && !orderMismatch(p, order),
+      },
     });
     try {
       order = await this.adapter.captureOrder(p.orderId, p.id);
@@ -267,8 +274,8 @@ export class PayGuardPipeline {
     await this.audit.append({
       type: "execute",
       proposalId: p.id,
-      detail: `Order ${order.id} captured ${order.captureId} (${order.mode}) ${formatUsd(p.amountCents)}`,
-      meta: { mode: order.mode, status: order.status, rail: "orders_v2" },
+      detail: `Order ${order.id} captured ${order.captureId} (${order.mode}) ${formatUsd(p.amountCents)} capture_status=${order.captureStatus ?? "?"}`,
+      meta: { mode: order.mode, status: order.status, captureId: order.captureId, captureStatus: order.captureStatus, rail: "orders_v2" },
     });
     return done;
   }

@@ -1,9 +1,9 @@
 {
-  "at": "2026-11-09T18:34:08.935Z",
+  "at": "2026-11-09T18:59:08.331Z",
   "mode": "sandbox",
   "honest_note": "PayPal SANDBOX (api-m.sandbox.paypal.com) — no real money",
-  "orderId": "9N304432RG246962D",
-  "payoutBatchId": "8R2922DQHNK7L",
+  "orderId": "6L720112KR767970C",
+  "payoutBatchId": "HN4QWKRJ6YG5U",
   "steps": [
     {
       "step": "1 adapter",
@@ -13,7 +13,7 @@
     {
       "step": "2 create order",
       "ok": true,
-      "detail": "9N304432RG246962D status=PAYER_ACTION_REQUIRED approve=https://www.sandbox.paypal.com/checkoutnow?token=9N304432RG246962D"
+      "detail": "6L720112KR767970C status=PAYER_ACTION_REQUIRED approve=https://www.sandbox.paypal.com/checkoutnow?token=6L720112KR767970C"
     },
     {
       "step": "3 capture before approval",
@@ -23,17 +23,17 @@
     {
       "step": "4 payer approval",
       "ok": true,
-      "detail": "SKIPPED — sandbox needs a human buyer; re-run with --wait-approval 300 (link: https://www.sandbox.paypal.com/checkoutnow?token=9N304432RG246962D)"
+      "detail": "sandbox buyer approved"
     },
     {
       "step": "5 capture",
       "ok": true,
-      "detail": "SKIPPED (no approval yet)"
+      "detail": "6L720112KR767970C status=COMPLETED capture=6NV259828E280613B"
     },
     {
       "step": "6 payout",
       "ok": true,
-      "detail": "8R2922DQHNK7L create=PENDING → get=PENDING"
+      "detail": "HN4QWKRJ6YG5U create=PENDING → get=PENDING"
     }
   ],
   "failed": 0

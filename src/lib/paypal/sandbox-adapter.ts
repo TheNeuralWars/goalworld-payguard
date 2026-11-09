@@ -23,6 +23,24 @@ interface RawOrder {
   }>;
 }
 
+const TRANSIENT = /EAI_AGAIN|ENOTFOUND|ECONNRESET|ETIMEDOUT|ECONNREFUSED|UND_ERR_CONNECT_TIMEOUT|fetch failed/;
+
+/** Retry only network-level failures (DNS flaps etc.). Safe: writes carry PayPal-Request-Id. */
+async function withNetRetry<T>(fn: () => Promise<T>, tries = 4): Promise<T> {
+  let last: unknown;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = `${(e as Error)?.message ?? ""} ${((e as { cause?: { code?: string } })?.cause?.code) ?? ""}`;
+      if (!TRANSIENT.test(msg) || i === tries - 1) throw e;
+      last = e;
+      await new Promise((r) => setTimeout(r, 1000 * 2 ** i));
+    }
+  }
+  throw last;
+}
+
 interface TokenCache {
   accessToken: string;
   expiresAt: number;
@@ -59,7 +77,7 @@ export class SandboxPayPalAdapter implements PayPalAdapter {
       return this.token.accessToken;
     }
     const auth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString("base64");
-    const res = await this.fetchImpl(`${this.apiBase}/v1/oauth2/token`, {
+    const res = await withNetRetry(() => this.fetchImpl(`${this.apiBase}/v1/oauth2/token`, {
       method: "POST",
       headers: {
         Authorization: `Basic ${auth}`,
@@ -67,7 +85,7 @@ export class SandboxPayPalAdapter implements PayPalAdapter {
       },
       body: "grant_type=client_credentials",
       signal: AbortSignal.timeout(20_000),
-    });
+    }));
     if (!res.ok) {
       const body = await res.text();
       throw new PayPalApiError(res.status, "OAUTH_FAILED", `paypal oauth failed ${res.status}: ${body.slice(0, 200)}`);
@@ -82,7 +100,7 @@ export class SandboxPayPalAdapter implements PayPalAdapter {
 
   private async api<T>(path: string, init?: RequestInit & { requestId?: string }): Promise<T> {
     const token = await this.getAccessToken();
-    const res = await this.fetchImpl(`${this.apiBase}${path}`, {
+    const res = await withNetRetry(() => this.fetchImpl(`${this.apiBase}${path}`, {
       ...init,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -92,7 +110,7 @@ export class SandboxPayPalAdapter implements PayPalAdapter {
         ...(init?.headers || {}),
       },
       signal: AbortSignal.timeout(30_000),
-    });
+    }));
     if (!res.ok) {
       const body = await res.text();
       let issue = `HTTP_${res.status}`;
