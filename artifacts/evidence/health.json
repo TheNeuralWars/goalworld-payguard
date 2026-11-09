@@ -1,0 +1,1 @@
+{"ok":true,"service":"goalworld-payguard","mode":"mock","currency":"USD","perTxCents":5000,"dailyCents":20000,"allowPayees":["creator@goalworld.fun","tools@goalworld.fun","vendor-sandbox@example.com"],"liveEndpointsBlocked":true}

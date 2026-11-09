@@ -1,0 +1,18 @@
+
+> goalworld-payguard@0.1.0 test
+> vitest run
+
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /data/work/goalworld-payguard
+
+ ✓ tests/policy.test.ts (6 tests) 291ms
+ ✓ tests/sandbox-guard.test.ts (4 tests) 112ms
+ ✓ tests/pipeline.test.ts (5 tests) 295ms
+ ✓ tests/mock-adapter.test.ts (2 tests) 161ms
+
+ Test Files  4 passed (4)
+      Tests  17 passed (17)
+   Start at  17:22:53
+   Duration  11.61s (transform 8.34s, setup 0ms, collect 9.82s, tests 858ms, environment 1ms, prepare 4.18s)
+
