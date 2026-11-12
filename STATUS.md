@@ -11,7 +11,7 @@
 - **Public / deploy / video / submit?** **No** (none of them)
 - **Touched forbidden assets?** No (AgentPay, Flip mp4, Cloudflare tunnels untouched)
 
-## REVIEW: pending (video)
+## REVIEW: approved (October, v2 video, 2026-11-12)
 
 - **Demo video ready for October review (2026-11-12 17:12 UTC / 18:12 Rome):**
   - **Path:** `/data/shared-memory/artifacts/opportunities/paypal-payguard/media/payguard_demo_20261112.mp4`
@@ -59,5 +59,6 @@ Previous: `changes_requested` by October 2026-11-09 ~18:30 Rome (see "History" b
 - build-done 2026-11-11 18:00 · video 2026-11-12 12:00 · re-review target 2026-11-12 15:00 · deadline **2026-11-12 21:00**
 
 ## History
+- 2026-11-12 ~18:50 Rome — October REVIEW: approved (October, v2 video, 2026-11-12). Video media/payguard_demo_20261112_v2.mp4 verified (sha256 8f4fa13d…, 1:51.5, 1080p, no audio, captions >=2.6s, Visa claim removed). Repo tests 79/79. No secrets in video or tracked files.
 - 2026-11-09 ~20:00 Rome — P0-1 fully closed with real sandbox buyer approval + capture (`7AU11689AT477705H` COMPLETED via app; `6NV259828E280613B` via smoke). REVIEW stays pending.
 - 2026-11-09 ~18:30 Rome — October `REVIEW: changes_requested` on `5977aba` (P0: Orders without payer approval; heuristic-only AI. P1: TOOLS.md, unknown-payee snap, UI brakes, hosted URL. P2: tsc casts, Orders body, screenshots). Full note: `artifacts/opportunities/paypal-payguard/OCTOBER_REVIEW_NOTE.md`.
