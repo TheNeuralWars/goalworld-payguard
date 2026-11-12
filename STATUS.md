@@ -11,7 +11,26 @@
 - **Public / deploy / video / submit?** **No** (none of them)
 - **Touched forbidden assets?** No (AgentPay, Flip mp4, Cloudflare tunnels untouched)
 
-## REVIEW: pending (re-review)
+## REVIEW: pending (video)
+
+- **Demo video ready for October review (2026-11-12 17:12 UTC / 18:12 Rome):**
+  - **Path:** `/data/shared-memory/artifacts/opportunities/paypal-payguard/media/payguard_demo_20261112.mp4`
+  - **Duration:** 107.4s (01:47, 1080p, 24fps, H.264, 2.8 MB)
+  - **SHA256:** `b234b1f5e6fd2ebfb8a56aba518c5d251f80af9e7978775226abd9c0bc2166ea`
+  - **Captions:** English burned in (drawtext, DejaVu Sans Bold, bottom bar, 24 remapped timeline cues). No AI voice / TTS.
+  - **Secrets hygiene:** Zero credentials on screen. Buyer email masked on login modal (`sb-••••••••••`), password hidden/empty, Chrome "Save password?" bubble disabled via `--password-store=basic --disable-save-password-bubble` and clean profile preferences.
+  - **Flow recorded end-to-end on live PayPal Sandbox REST + live PayGuard app:**
+    1. Legitimate $9 order to allowlisted payee -> LLM Propose + AI Risk Reviewer -> Human operator Approve -> Order `64695876UK418390A` (`PAYER_ACTION_REQUIRED`, $9 held).
+    2. Early capture check refused (PayGuard enforces approval before capture).
+    3. Sandbox buyer checkout on `www.sandbox.paypal.com` with sandbox Visa selected.
+    4. Capture completed: Order `64695876UK418390A` -> `COMPLETED`, Capture ID `4RJ05364RW941004F`, $9.00 committed.
+    5. Brakes update live: Spent $9.00, Held $0.00, Remaining $191.00.
+    6. Guard Block (Over Cap): Proposes $999 -> rejected by hard policy `PER_TX_CAP` ($50 limit), no Approve button.
+    7. Guard Block (Look-alike Payee): `creat0r@` typo -> rejected by hard policy `PAYEE_NOT_ALLOWED` (zero fuzzy snapping).
+    8. AI Risk Veto: Prompt injection asking for $45 gift cards -> blocked by AI Risk Reviewer `AI_RISK_BLOCK` (`risk:high`, `ai:block`).
+    9. Full immutable audit trail visible.
+  - **Verified review frames:** `/data/shared-memory/artifacts/opportunities/paypal-payguard/media/frames/` (8 frames: `frame_01_intro.png` through `frame_08_block_ai_injection.png`, verified via vision for legibility and zero credential leakage).
+
 
 Previous: `changes_requested` by October 2026-11-09 ~18:30 Rome (see "History" below). Every item mapped to its fix + evidence:
 
