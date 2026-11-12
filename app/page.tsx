@@ -77,6 +77,20 @@ function usd(cents: number) {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
+function maskEmails(s: string): string {
+  return s.replace(
+    /([a-zA-Z0-9._+-]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]{2,})/g,
+    (_m, local: string, dom: string, tld: string) => {
+      const l =
+        local.length > 6
+          ? `${local.slice(0, 6)}•`
+          : `${local.slice(0, Math.max(2, local.length - 1))}•`;
+      const d = dom.slice(0, 3);
+      return `${l}@${d}•••.${tld}`;
+    },
+  );
+}
+
 function brain(t?: Trace) {
   if (!t) return "—";
   if (t.kind === "llm") return `LLM ${t.model ?? ""}${t.latencyMs ? ` · ${(t.latencyMs / 1000).toFixed(1)}s` : ""}`;
@@ -132,6 +146,13 @@ export default function HomePage() {
   }
 
   const pol = pv?.policy;
+  const presets = useMemo<Array<[string, string]>>(() => {
+    const sbPayee = pol?.allowPayees.find((a) => a.endsWith("@business.example.com")) || "tools@goalworld.fun";
+    return PRESETS.map(([label, text]) =>
+      label === "Tool order" ? [label, `Pay ${sbPayee} $9 for Tavily research batch`] : [label, text],
+    );
+  }, [pol]);
+
   const usedPct = useMemo(() => {
     if (!pol || !pol.dailyCents) return { spent: 0, held: 0 };
     return {
@@ -202,7 +223,7 @@ export default function HomePage() {
               <span className="stat-label">Allowlist · exact match only, no fuzzy snapping</span>
               <div className="flags">
                 {pol.allowPayees.map((a) => (
-                  <span className="chip" key={a}>{a}</span>
+                  <span className="chip" key={a}>{maskEmails(a)}</span>
                 ))}
               </div>
             </div>
@@ -216,23 +237,23 @@ export default function HomePage() {
         <section className="card">
           <h2>1 · Agent intent</h2>
           <label htmlFor="intent">What should the fleet pay for?</label>
-          <textarea id="intent" value={intent} onChange={(e) => setIntent(e.target.value)} />
+          <textarea id="intent" value={maskEmails(intent)} onChange={(e) => setIntent(e.target.value)} />
           <div className="presets">
-            {PRESETS.map(([label, text]) => (
-              <button key={label} className="preset" onClick={() => setIntent(text)} title={text}>
+            {presets.map(([label, text]) => (
+              <button key={label} className="preset" onClick={() => setIntent(text)}>
                 {label}
               </button>
             ))}
           </div>
           <div className="row">
-            <button disabled={busy || !intent.trim()} onClick={() => call("/api/proposals", { intent })}>
+            <button id="btn-propose" disabled={busy || !intent.trim()} onClick={() => call("/api/proposals", { intent })}>
               {busy ? "Thinking…" : "Propose → Guard"}
             </button>
-            <button className="secondary" disabled={busy} onClick={() => refresh()}>
+            <button id="btn-refresh" className="secondary" disabled={busy} onClick={() => refresh()}>
               Refresh
             </button>
           </div>
-          {error ? <p className="err">{error}</p> : null}
+          {error ? <p className="err">{maskEmails(error)}</p> : null}
 
           <h2 style={{ marginTop: 24 }}>
             2 · Proposal queue{" "}
@@ -251,16 +272,16 @@ export default function HomePage() {
                 <article key={p.id} className={`item ${focus === p.id ? "focus" : ""} st-${p.status}`}>
                   <header>
                     <span className={`status ${p.status}`}>{p.status}</span>
-                    <span className="mono amount">{usd(p.amountCents)} → {p.payeeEmail}</span>
+                    <span className="mono amount">{usd(p.amountCents)} → {maskEmails(p.payeeEmail)}</span>
                   </header>
                   <div className="status-copy">{STATUS_COPY[p.status] ?? p.status}</div>
-                  <p className="intent">{p.intent}</p>
+                  <p className="intent">{maskEmails(p.intent)}</p>
                   {p.status === "guard_rejected" ? (
                     <div className="reject-box">
-                      <span className="code">{p.guard.policyCode}</span> {p.guard.policyReason ?? p.guard.summary}
+                      <span className="code">{p.guard.policyCode}</span> {maskEmails(p.guard.policyReason ?? p.guard.summary)}
                     </div>
                   ) : (
-                    <p className="mono">{p.guard.summary}</p>
+                    <p className="mono">{maskEmails(p.guard.summary)}</p>
                   )}
                   <div className="flags">
                     <span className={`flag risk-${p.guard.riskLevel}`}>risk:{p.guard.riskLevel}</span>
@@ -281,10 +302,10 @@ export default function HomePage() {
                   {p.payoutBatchId ? (
                     <div className="mono">payout batch {p.payoutBatchId} · {p.payoutStatus}</div>
                   ) : null}
-                  {p.error && p.status !== "guard_rejected" ? <div className="err">{p.error}</div> : null}
+                  {p.error && p.status !== "guard_rejected" ? <div className="err">{maskEmails(p.error)}</div> : null}
                   {p.status === "awaiting_human" ? (
                     <div className="row">
-                      <button disabled={busy} onClick={() => call(`/api/proposals/${p.id}/approve`)}>
+                      <button className="btn-approve" disabled={busy} onClick={() => call(`/api/proposals/${p.id}/approve`)}>
                         Approve & execute
                       </button>
                       <button className="danger" disabled={busy} onClick={() => call(`/api/proposals/${p.id}/reject`)}>
@@ -294,10 +315,16 @@ export default function HomePage() {
                   ) : null}
                   {p.status === "awaiting_payer_approval" && p.approveUrl ? (
                     <div className="row">
-                      <a className="button" href={p.approveUrl}>
+                      <button
+                        className="warn-btn"
+                        disabled={busy}
+                        onClick={() => {
+                          if (p.approveUrl) window.location.href = p.approveUrl;
+                        }}
+                      >
                         Open PayPal approval{pv?.adapter === "mock" ? " (mock)" : ""}
-                      </a>
-                      <button className="secondary" disabled={busy} onClick={() => call(`/api/proposals/${p.id}/refresh`)}>
+                      </button>
+                      <button className="secondary btn-check-approval" disabled={busy} onClick={() => call(`/api/proposals/${p.id}/refresh`)}>
                         Check approval
                       </button>
                     </div>
@@ -331,7 +358,7 @@ export default function HomePage() {
                     <span className="mono">{new Date(e.at).toLocaleTimeString()}</span>
                   </header>
                   <div className="mono">{e.proposalId}</div>
-                  <p style={{ margin: "6px 0 0" }}>{e.detail}</p>
+                  <p style={{ margin: "6px 0 0" }}>{maskEmails(e.detail)}</p>
                 </article>
               ))
             )}
