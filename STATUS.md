@@ -2,13 +2,13 @@
 
 - **Contest:** PayPal AI Hackathon (Devpost) — angle: Best Use of Agentic Commerce / PayPal+AI
 - **Deadline Rome:** 2026-11-12 21:00
-- **Repo:** https://github.com/TheNeuralWars/goalworld-payguard (**private**)
+- **Repo:** https://github.com/TheNeuralWars/goalworld-payguard (**public**)
 - **VPS path:** `/data/work/goalworld-payguard` · **Preview:** `http://127.0.0.1:3047` (localhost only; mock PayPal + LLM)
 - **Version:** 0.2.1 (re-review build + real sandbox buyer capture, 2026-11-09 ~20:05 Europe/Rome)
 - **PayPal:** mock default · **real sandbox verified** via `vault-run paypal-sandbox` (Hermes Vault, sandbox only; Live refused)
 - **AI:** OmniRoute `free-smart` (served `claude-opus-5-5-high` on 2026-11-09) for Propose + Risk; rules fallback labeled
 - **Tests:** `79/79` · `tsc --noEmit` **clean** · `next build` OK · `demo:offline` / `demo:llm` / sandbox demo OK · contract smoke mock 6/6 + **sandbox 6/6 with real buyer approval + capture** · full-app sandbox E2E captured
-- **Public / deploy / video / submit?** **No** (none of them)
+- **Public / deploy / video / submit?** Repo **public** (2026-11-12). YouTube + Devpost still to be submitted once.
 - **Touched forbidden assets?** No (AgentPay, Flip mp4, Cloudflare tunnels untouched)
 
 ## REVIEW: approved (October, v2 video, 2026-11-12)
